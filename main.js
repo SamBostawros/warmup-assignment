@@ -7,7 +7,19 @@ const fs = require("fs");
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Implement this function
+    // TODO: Test cases show that shifts can be overnight, so we need to account for that
+    // Convert time strings (hh:mm:ss am/pm) to 24-hour format in seconds
+    const startSeconds = convertTo24Hour(startTime);
+    const endSeconds = convertTo24Hour(endTime);
+    
+    // Calculate duration, accounting for overnight shifts
+    let durationSeconds = endSeconds - startSeconds;
+    if (durationSeconds < 0) {
+        durationSeconds += 24 * 60 * 60; // Add 24 hours if overnight
+    }
+    
+    // Convert back to h:mm:ss format
+    return convertSecondsToTime(durationSeconds);
 }
 
 // ============================================================
