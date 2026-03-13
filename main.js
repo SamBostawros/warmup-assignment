@@ -7,19 +7,36 @@ const fs = require("fs");
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Test cases show that shifts can be overnight, so we need to account for that
-    // Convert time strings (hh:mm:ss am/pm) to 24-hour format in seconds
-    const startSeconds = convertTo24Hour(startTime);
-    const endSeconds = convertTo24Hour(endTime);
-    
-    // Calculate duration, accounting for overnight shifts
-    let durationSeconds = endSeconds - startSeconds;
-    if (durationSeconds < 0) {
-        durationSeconds += 24 * 60 * 60; // Add 24 hours if overnight
+    // --- parse startTime ---
+    let st = startTime.trim().toLowerCase();
+    let stPeriod = st.slice(st.lastIndexOf(' ') + 1).trim();
+    let stParts  = st.slice(0, st.lastIndexOf(' ')).trim().split(':').map(Number);
+    let stH = stParts[0], stM = stParts[1], stS = stParts[2];
+    if (stPeriod === 'am') { 
+        if (stH === 12) stH = 0; 
     }
-    
-    // Convert back to h:mm:ss format
-    return convertSecondsToTime(durationSeconds);
+    else{ 
+        if (stH !== 12) 
+            stH += 12;
+    }
+    let startSec = stH * 3600 + stM * 60 + stS;
+
+    // --- parse endTime ---
+    let et = endTime.trim().toLowerCase();
+    let etPeriod = et.slice(et.lastIndexOf(' ') + 1).trim();
+    let etParts  = et.slice(0, et.lastIndexOf(' ')).trim().split(':').map(Number);
+    let etH = etParts[0], etM = etParts[1], etS = etParts[2];
+    if (etPeriod === 'am') { if (etH === 12) etH = 0; }
+    else                   { if (etH !== 12) etH += 12; }
+    let endSec = etH * 3600 + etM * 60 + etS;
+
+    // --- format result ---
+    let total = endSec - startSec;
+    if (total < 0) total = 0;
+    let h = Math.floor(total / 3600);
+    let m = Math.floor((total % 3600) / 60);
+    let s = total % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
 // ============================================================
