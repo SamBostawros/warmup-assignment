@@ -55,7 +55,8 @@ function getIdleTime(startTime, endTime) {
     let stParts  = st.slice(0, st.lastIndexOf(' ')).trim().split(':').map(Number);
     let stH = stParts[0], stM = stParts[1], stS = stParts[2];
     if (stPeriod === 'am') { 
-        if (stH === 12) stH = 0; 
+        if (stH === 12) 
+            stH = 0; 
     }
     else{ 
         if (stH !== 12) 
@@ -69,10 +70,12 @@ function getIdleTime(startTime, endTime) {
     let etParts  = et.slice(0, et.lastIndexOf(' ')).trim().split(':').map(Number);
     let etH = etParts[0], etM = etParts[1], etS = etParts[2];
     if (etPeriod === 'am') { 
-        etH = 0; 
+        if (etH === 12) 
+            etH = 0; 
     }
     else{ 
-        if (etH !== 12) etH += 12; 
+        if (etH !== 12) 
+            etH += 12; 
     }
     let endSec = etH * 3600 + etM * 60 + etS;
 
