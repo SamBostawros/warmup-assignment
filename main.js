@@ -46,7 +46,53 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+    const DELIVERY_START = 8  * 3600; // 08:00:00
+    const DELIVERY_END   = 22 * 3600; // 22:00:00
+
+    // --- parse startTime ---
+    let st = startTime.trim().toLowerCase();
+    let stPeriod = st.slice(st.lastIndexOf(' ') + 1).trim();
+    let stParts  = st.slice(0, st.lastIndexOf(' ')).trim().split(':').map(Number);
+    let stH = stParts[0], stM = stParts[1], stS = stParts[2];
+    if (stPeriod === 'am') { 
+        if (stH === 12) stH = 0; 
+    }
+    else{ 
+        if (stH !== 12) 
+            stH += 12;
+    }
+    let startSec = stH * 3600 + stM * 60 + stS;
+
+    // --- parse endTime ---
+    let et = endTime.trim().toLowerCase();
+    let etPeriod = et.slice(et.lastIndexOf(' ') + 1).trim();
+    let etParts  = et.slice(0, et.lastIndexOf(' ')).trim().split(':').map(Number);
+    let etH = etParts[0], etM = etParts[1], etS = etParts[2];
+    if (etPeriod === 'am') { 
+        etH = 0; 
+    }
+    else{ 
+        if (etH !== 12) etH += 12; 
+    }
+    let endSec = etH * 3600 + etM * 60 + etS;
+
+    // --- calculate idle time ---
+    let idleSec = 0;
+    if (startSec < DELIVERY_START) {
+        let cap = Math.min(endSec, DELIVERY_START);
+        if (cap > startSec) idleSec += cap - startSec;
+    }
+    if (endSec > DELIVERY_END) {
+        let base = Math.max(startSec, DELIVERY_END);
+        if (endSec > base) idleSec += endSec - base;
+    }
+
+    // --- format result ---
+    if (idleSec < 0) idleSec = 0;
+    let h = Math.floor(idleSec / 3600);
+    let m = Math.floor((idleSec % 3600) / 60);
+    let s = idleSec % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
 // ============================================================
