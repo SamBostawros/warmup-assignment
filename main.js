@@ -388,7 +388,7 @@ function getTotalActiveHoursPerMonth(textFile, driverID, month) {
     let h = Math.floor(totalSec / 3600);
     let m = Math.floor((totalSec % 3600) / 60);
     let s = totalSec % 60;
-    
+
     return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
@@ -407,7 +407,7 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     let rateLines = rateRaw.split('\n').map(l => l.replace(/\r$/, ''));
     let dayOff = null;
     for (let i = 0; i < rateLines.length; i++) {
-        if (!rateLines[i].trim()) 
+        if (!rateLines[i].trim())
             continue;
         let cols = rateLines[i].split(',');
         if (cols[0].trim() === driverID) {
@@ -423,21 +423,21 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
     let totalSec = 0;
 
     for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) 
+        if (!lines[i].trim())
             continue;
         let cols = lines[i].split(',');
-        if (cols[0].trim() !== driverID) 
+        if (cols[0].trim() !== driverID)
             continue;
 
         let dateStr = cols[2].trim();
         let recordMonth = parseInt(dateStr.split('-')[1], 10);
-        if (recordMonth !== month) 
+        if (recordMonth !== month)
             continue;
 
         // skip if day off
         let d = new Date(dateStr);
         let shiftDay = DAYS[d.getUTCDay()];
-        if (dayOff && shiftDay === dayOff) 
+        if (dayOff && shiftDay === dayOff)
             continue;
 
         // determine daily quota
@@ -450,13 +450,13 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
 
     // --- apply bonus deduction (2 hours each) ---
     totalSec -= bonusCount * 2 * 3600;
-    if (totalSec < 0) 
+    if (totalSec < 0)
         totalSec = 0;
 
     let h = Math.floor(totalSec / 3600);
     let m = Math.floor((totalSec % 3600) / 60);
     let s = totalSec % 60;
-    
+
     return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
@@ -469,7 +469,51 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
 // Returns: integer (net pay)
 // ============================================================
 function getNetPay(driverID, actualHours, requiredHours, rateFile) {
-    // TODO: Implement this function
+    // --- read basePay and tier ---
+    let raw = fs.readFileSync(rateFile, { encoding: 'utf8' });
+    let lines = raw.split('\n').map(l => l.replace(/\r$/, ''));
+    let basePay = 0;
+    let tier = 0;
+    for (let i = 0; i < lines.length; i++) {
+        if (!lines[i].trim())
+            continue;
+        let cols = lines[i].split(',');
+        if (cols[0].trim() === driverID) {
+            basePay = parseInt(cols[2].trim(), 10);
+            tier = parseInt(cols[3].trim(), 10);
+            break;
+        }
+    }
+
+    // --- parse actualHours and requiredHours ---
+    let aParts = actualHours.trim().split(':').map(Number);
+    let actualSec = aParts[0] * 3600 + aParts[1] * 60 + aParts[2];
+
+    let rParts = requiredHours.trim().split(':').map(Number);
+    let requiredSec = rParts[0] * 3600 + rParts[1] * 60 + rParts[2];
+
+    // no deduction if actual >= required
+    if (actualSec >= requiredSec)
+        return basePay;
+
+    let missingTotalHours = (requiredSec - actualSec) / 3600;
+
+    // tier allowance
+    let tierAllowance = { 1: 50, 2: 20, 3: 10, 4: 3 };
+    let allowedHours = tierAllowance[tier] || 0;
+
+    let billableHours = missingTotalHours - allowedHours;
+
+    // within allowance — no deduction
+    if (billableHours <= 0)
+        return basePay;
+
+    // only full hours are billed
+    let billableFullHours = Math.floor(billableHours);
+    let deductionRatePerHour = Math.floor(basePay / 185);
+    let salaryDeduction = billableFullHours * deductionRatePerHour;
+
+    return basePay - salaryDeduction;
 }
 
 module.exports = {
